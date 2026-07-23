@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Enable Morning Summary",
+    "steps": [
+      {
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Enable and configure daily morning price summary"
+            }
+          }
+        ],
+        "send": {
+          "callback": "summary:enable"
+        }
+      }
+    ]
+  }
+]

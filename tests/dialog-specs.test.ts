@@ -9,6 +9,10 @@ import { formatSuiteResult, parseBotSpecs, runSpecs } from "../src/toolkit/harne
 // replay locally so `npm test` catches handler-reply-vs-spec drift BEFORE the gate
 // does — the single most common reason a green build still fails to publish.
 //
+// Use makeBot() from harness-entry (not raw buildBot): it resets durable store,
+// freezes the clock, and enables offline price fixtures — matching the publish
+// gate isolation. Without that, watchlist/price specs leak state across runs.
+//
 // If this fails, a handler's reply text doesn't match its spec's expected text:
 // the report names the spec + the exact step + expected-vs-actual call. Make one
 // match the other. (Do NOT delete this file — it is your local mirror of the gate.)

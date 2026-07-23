@@ -1,17 +1,93 @@
 import { Composer } from "grammy";
+import type { Ctx } from "../bot.js";
+import { registerMainMenuItem, inlineButton, inlineKeyboard } from "../toolkit/index.js";
+import { fetchPrice, formatPct, formatUsd, resolveTicker } from "../services/prices.js";
+import { ensureProfile } from "../services/users.js";
+import { addTicker } from "../services/watchlist.js";
+import { cancelKeyboard, backKeyboard } from "../lib/ui.js";
 
-// SCAFFOLD — generated from the bot blueprint BEFORE the agent runs.
-// Keep a LIVE registration (.command / .callbackQuery / …) so this feature is
-// never an empty stub. Replace the reply body with real logic + copy; if you
-// change the user-facing text, update tests/specs to match EXACTLY.
-// Do NOT rewrite src/bot.ts — buildBot() already auto-loads this module.
-// Menu: wire this into /start via registerMainMenuItem({ label: "Add Custom Ticker", data: "ticker:add_custom" }) if the toolkit exposes it.
+registerMainMenuItem({ label: "Add custom", data: "ticker:add_custom", order: 20 });
 
-const composer = new Composer();
+const composer = new Composer<Ctx>();
+
+const PROMPT =
+  "Send a ticker symbol or coin name (e.g. SOL or Solana).\n" +
+  "I'll validate it against the price feed.";
 
 composer.callbackQuery("ticker:add_custom", async (ctx) => {
   await ctx.answerCallbackQuery();
-  await ctx.reply("Prompt user to enter a custom ticker symbol");
+  ctx.session.step = "awaiting_custom_ticker";
+  try {
+    await ctx.editMessageText(PROMPT, { reply_markup: cancelKeyboard() });
+  } catch {
+    await ctx.reply(PROMPT, { reply_markup: cancelKeyboard() });
+  }
+});
+
+composer.on("message:text", async (ctx, next) => {
+  if (ctx.session.step !== "awaiting_custom_ticker") return next();
+  const text = ctx.message.text.trim();
+  if (text.startsWith("/")) return next();
+
+  const uid = ctx.from?.id;
+  if (uid == null) return;
+  await ensureProfile(uid, ctx.from?.first_name ?? "User");
+
+  const info = await resolveTicker(text);
+  if (!info) {
+    await ctx.reply(
+      "Couldn't find that coin — check the spelling and try again, or tap Cancel.",
+      { reply_markup: cancelKeyboard() },
+    );
+    return;
+  }
+
+  let quote;
+  try {
+    quote = await fetchPrice(info.id);
+  } catch {
+    await ctx.reply(
+      "Price feed is unavailable right now. Try again in a moment.",
+      { reply_markup: cancelKeyboard() },
+    );
+    return;
+  }
+  if (!quote) {
+    await ctx.reply(
+      "That ticker didn't return a price. Try a different symbol.",
+      { reply_markup: cancelKeyboard() },
+    );
+    return;
+  }
+
+  const { item, created } = await addTicker(uid, info);
+  ctx.session.step = "idle";
+  const priceLine = `${formatUsd(quote.price_usd)} (${formatPct(quote.change_24h)} 24h)`;
+
+  if (!created) {
+    await ctx.reply(
+      `${item.display_name} (${item.ticker}) is already on your watchlist.\n${priceLine}`,
+      {
+        reply_markup: inlineKeyboard([
+          [inlineButton("Configure alerts", `alerts:pick:${item.ticker}`)],
+          [inlineButton("Back to menu", "menu:main")],
+        ]),
+      },
+    );
+    return;
+  }
+
+  await ctx.reply(
+    `Added ${item.display_name} (${item.ticker}) to your watchlist.\n` +
+      `${priceLine}\n\n` +
+      `Default alerts are off — tap Configure alerts to set thresholds.`,
+    {
+      reply_markup: inlineKeyboard([
+        [inlineButton("Configure alerts", `alerts:pick:${item.ticker}`)],
+        [inlineButton("Back to menu", "menu:main")],
+      ]),
+    },
+  );
 });
 
 export default composer;

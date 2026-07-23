@@ -1,19 +1,66 @@
 [
   {
-    "name": "Add Custom Ticker",
+    "name": "Add Custom Ticker prompts for symbol",
     "steps": [
       {
+        "send": { "callback": "ticker:add_custom" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "Send a ticker symbol or coin name (e.g. SOL or Solana).\nI'll validate it against the price feed."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Custom ticker SOL is validated and added",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "ticker:add_custom" },
+        "expect": [{ "method": "answerCallbackQuery" }]
+      },
+      {
+        "send": { "text": "SOL" },
         "expect": [
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Prompt user to enter a custom ticker symbol"
+              "text": "Added Solana (SOL) to your watchlist.\n$148.20 (+2.05% 24h)\n\nDefault alerts are off — tap Configure alerts to set thresholds."
             }
           }
-        ],
-        "send": {
-          "callback": "ticker:add_custom"
-        }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Unknown custom ticker gets a helpful error",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "ticker:add_custom" },
+        "expect": [{ "method": "answerCallbackQuery" }]
+      },
+      {
+        "send": { "text": "NOTACOINXYZ" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Couldn't find that coin — check the spelling and try again, or tap Cancel."
+            }
+          }
+        ]
       }
     ]
   }

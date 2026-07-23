@@ -1,19 +1,72 @@
 [
   {
-    "name": "View Watchlist",
+    "name": "View Watchlist empty state",
     "steps": [
       {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "watchlist:view" },
         "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "No coins yet — tap Add common or Add custom to start tracking."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "View Watchlist shows added coins and alerts",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "ticker:common:BTC" },
+        "expect": [{ "method": "answerCallbackQuery" }, { "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "watchlist:view" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "Your watchlist (1):\n\n• Bitcoin (BTC) — no alerts set"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Remove coin from watchlist",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "ticker:common:ETH" },
+        "expect": [{ "method": "answerCallbackQuery" }, { "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "watchlist:rm:ETH" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Display current watchlist and alert settings"
+              "text": "Removed ETH.\n\nNo coins yet — tap Add common or Add custom to start tracking."
             }
           }
-        ],
-        "send": {
-          "callback": "watchlist:view"
-        }
+        ]
       }
     ]
   }

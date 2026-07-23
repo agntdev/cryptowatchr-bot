@@ -1,19 +1,93 @@
 [
   {
-    "name": "/price",
+    "name": "/price prompts for ticker or all",
     "steps": [
       {
+        "send": { "text": "/price" },
         "expect": [
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Request on-demand price check for a ticker or entire watchlist"
+              "text": "Send a ticker (e.g. BTC) or all for every coin on your watchlist."
             }
           }
-        ],
-        "send": {
-          "text": "/price"
-        }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "/price BTC returns live price",
+    "steps": [
+      {
+        "send": { "text": "/price BTC" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Bitcoin (BTC)\nPrice: $67,500.25\n24h change: +1.42%"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "/price all on empty watchlist",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "text": "/price all" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Your watchlist is empty — add a coin first, or send a single ticker."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "/price all shows watchlist prices",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "ticker:common:BTC" },
+        "expect": [{ "method": "answerCallbackQuery" }, { "method": "sendMessage" }]
+      },
+      {
+        "send": { "text": "/price all" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Watchlist prices:\n• Bitcoin (BTC): $67,500.25 (+1.42% 24h)"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Unknown ticker price error",
+    "steps": [
+      {
+        "send": { "text": "/price NOPEXYZ" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Couldn't find that coin — check the spelling and try again."
+            }
+          }
+        ]
       }
     ]
   }

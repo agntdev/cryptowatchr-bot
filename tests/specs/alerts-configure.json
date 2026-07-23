@@ -1,19 +1,120 @@
 [
   {
-    "name": "Configure Alerts",
+    "name": "Configure Alerts empty watchlist",
     "steps": [
       {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "alerts:configure" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "No coins on your watchlist yet — tap Add common or Add custom first."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Configure threshold above alert",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "ticker:common:BTC" },
+        "expect": [{ "method": "answerCallbackQuery" }, { "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "alerts:configure" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "editMessageText",
+            "payload": { "text": "Pick a coin to configure alerts." }
+          }
+        ]
+      },
+      {
+        "send": { "callback": "alerts:pick:BTC" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "Bitcoin (BTC)\nCurrent rules: no alerts set\n\nChoose what to set."
+            }
+          }
+        ]
+      },
+      {
+        "send": { "callback": "alerts:th_above:BTC" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Send the USD price above which you want an alert for BTC (e.g. 70000)."
+            }
+          }
+        ]
+      },
+      {
+        "send": { "text": "70000" },
         "expect": [
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Open alert configuration menu for selected ticker"
+              "text": "Saved: alert when BTC is above $70,000.00."
             }
           }
-        ],
-        "send": {
-          "callback": "alerts:configure"
-        }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Configure percent change alert",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "ticker:common:TON" },
+        "expect": [{ "method": "answerCallbackQuery" }, { "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "alerts:pick:TON" },
+        "expect": [{ "method": "answerCallbackQuery" }, { "method": "editMessageText" }]
+      },
+      {
+        "send": { "callback": "alerts:pct:TON" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Send a percent move and window for TON, like 5 1 (5% in 1 hour).\nFormat: <percent> <hours>"
+            }
+          }
+        ]
+      },
+      {
+        "send": { "text": "5 1" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Saved: alert when TON moves 5% within 1h."
+            }
+          }
+        ]
       }
     ]
   }

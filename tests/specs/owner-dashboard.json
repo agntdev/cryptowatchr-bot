@@ -1,0 +1,19 @@
+[
+  {
+    "name": "Owner dashboard rejects non-owner",
+    "steps": [
+      {
+        "send": { "callback": "owner:dashboard" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "That dashboard is only available to the bot owner."
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -7,7 +7,30 @@
         "expect": [
           {
             "method": "sendMessage",
-            "payload": { "text": "👋 Welcome! Tap a button below to get started." }
+            "payload": {
+              "text": "CryptoWatchr — track prices, set alerts, and get a morning summary.\n\nTap a button below to get started."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Back to menu re-renders welcome",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "menu:main" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "CryptoWatchr — track prices, set alerts, and get a morning summary.\n\nTap a button below to get started."
+            }
           }
         ]
       }

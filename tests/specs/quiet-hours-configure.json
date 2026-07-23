@@ -1,19 +1,81 @@
 [
   {
-    "name": "Set Quiet Hours",
+    "name": "Set Quiet Hours prompts for start time",
     "steps": [
       {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "quiet_hours:configure" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "Quiet hours mute alert delivery (they're queued and sent when quiet hours end).\n\nCurrent: 22:00 – 08:00 (UTC)\n\nSend the start time as HH:MM (24h), e.g. 22:00."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Quiet hours start and end are saved",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "quiet_hours:configure" },
+        "expect": [{ "method": "answerCallbackQuery" }, { "method": "editMessageText" }]
+      },
+      {
+        "send": { "text": "23:00" },
         "expect": [
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Configure quiet hours for alert suppression"
+              "text": "Start set to 23:00. Now send the end time (HH:MM), e.g. 08:00."
             }
           }
-        ],
-        "send": {
-          "callback": "quiet_hours:configure"
-        }
+        ]
+      },
+      {
+        "send": { "text": "07:30" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Quiet hours updated: 23:00 – 07:30 (UTC).\nAlerts that fire during this window are queued and delivered after it ends."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Invalid quiet hours time is rejected",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "quiet_hours:configure" },
+        "expect": [{ "method": "answerCallbackQuery" }]
+      },
+      {
+        "send": { "text": "25:99" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Use 24-hour HH:MM, e.g. 22:00 or 08:30."
+            }
+          }
+        ]
       }
     ]
   }

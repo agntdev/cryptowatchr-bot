@@ -5,8 +5,24 @@ import type { StorageAdapter } from "grammy";
 // The per-chat session shape (ephemeral conversation state only). Extend as the
 // bot grows. Durable domain data must NOT live here — use the toolkit's
 // persistent storage (see AGENTS.md).
+export type FlowStep =
+  | "idle"
+  | "awaiting_custom_ticker"
+  | "awaiting_price_ticker"
+  | "awaiting_threshold_above"
+  | "awaiting_threshold_below"
+  | "awaiting_percent"
+  | "awaiting_quiet_start"
+  | "awaiting_quiet_end"
+  | "awaiting_summary_time"
+  | "awaiting_timezone";
+
 export interface Session {
-  // example: step?: "awaiting_amount";
+  step?: FlowStep;
+  /** Ticker being configured in an alert flow. */
+  alertTicker?: string;
+  /** Quiet-hours start held while awaiting end. */
+  pendingQuietStart?: string;
 }
 
 export type Ctx = BotContext<Session>;

@@ -1,19 +1,76 @@
 [
   {
-    "name": "Add Common Ticker",
+    "name": "Add Common Ticker shows quick-add coins",
     "steps": [
       {
+        "send": { "callback": "ticker:add_common" },
         "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "Quick-add a popular coin. Tap one to add it to your watchlist."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Quick-add Bitcoin validates and adds to watchlist",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "ticker:add_common" },
+        "expect": [{ "method": "answerCallbackQuery" }]
+      },
+      {
+        "send": { "callback": "ticker:common:BTC" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Show quick-add buttons for common coins like Bitcoin, Ethereum, and Toncoin"
+              "text": "Added Bitcoin (BTC) to your watchlist.\n$67,500.25 (+1.42% 24h)\n\nDefault alerts are off — tap Configure alerts to set thresholds."
             }
           }
-        ],
-        "send": {
-          "callback": "ticker:add_common"
-        }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Adding the same common coin twice is idempotent",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "ticker:common:ETH" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Added Ethereum (ETH) to your watchlist.\n$3,450.80 (-0.65% 24h)\n\nDefault alerts are off — tap Configure alerts to set thresholds."
+            }
+          }
+        ]
+      },
+      {
+        "send": { "callback": "ticker:common:ETH" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Ethereum (ETH) is already on your watchlist.\n$3,450.80 (-0.65% 24h)"
+            }
+          }
+        ]
       }
     ]
   }

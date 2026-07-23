@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Threshold alert fires on price check when above threshold",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "ticker:common:BTC" },
+        "expect": [{ "method": "answerCallbackQuery" }, { "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "alerts:th_above:BTC" },
+        "expect": [{ "method": "answerCallbackQuery" }, { "method": "sendMessage" }]
+      },
+      {
+        "send": { "text": "100" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Saved: alert when BTC is above $100.00."
+            }
+          }
+        ]
+      },
+      {
+        "send": { "text": "/price all" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Watchlist prices:\n• Bitcoin (BTC): $67,500.25 (+1.42% 24h)"
+            }
+          },
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Alert: Bitcoin (BTC)\n$67,500.25 → $67,500.25 (0.00%)\nCrossed your above threshold of $100.00."
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

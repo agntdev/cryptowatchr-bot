@@ -1,24 +1,72 @@
 import { Composer } from "grammy";
 import type { Ctx } from "../bot.js";
-import { mainMenuKeyboard } from "../toolkit/index.js";
+import {
+  inlineButton,
+  inlineKeyboard,
+  mainMenuKeyboard,
+  mainMenuItems,
+} from "../toolkit/index.js";
+import { ensureProfile, isOwner } from "../services/users.js";
 
-// The /start handler renders the bot's MAIN MENU — the primary way users operate
-// a button-first bot. A feature adds its own button by calling
-// `registerMainMenuItem(...)` in its own `src/handlers/<slug>.ts`; this handler
-// renders whatever is registered (plus a Help button), so you do NOT edit this
-// file to add a feature. Send ONE message — no placeholder line above the menu.
+// /start — onboarding + main menu. Features register their own buttons via
+// registerMainMenuItem; this handler only renders them (plus owner dashboard).
+
 const composer = new Composer<Ctx>();
 
-const WELCOME = "👋 Welcome! Tap a button below to get started.";
+export const WELCOME =
+  "CryptoWatchr — track prices, set alerts, and get a morning summary.\n\n" +
+  "Tap a button below to get started.";
+
+function menuFor(uid: number | undefined) {
+  if (isOwner(uid)) {
+    const items = mainMenuItems();
+    const rows = [];
+    const cols = 2;
+    for (let i = 0; i < items.length; i += cols) {
+      rows.push(
+        items.slice(i, i + cols).map((it) => inlineButton(it.label, it.data)),
+      );
+    }
+    rows.push([inlineButton("Owner dashboard", "owner:dashboard")]);
+    rows.push([inlineButton("Help", "menu:help")]);
+    return inlineKeyboard(rows);
+  }
+  return mainMenuKeyboard();
+}
 
 composer.command("start", async (ctx) => {
-  await ctx.reply(WELCOME, { reply_markup: mainMenuKeyboard() });
+  const uid = ctx.from?.id;
+  if (uid != null) {
+    const name = [ctx.from?.first_name, ctx.from?.last_name].filter(Boolean).join(" ");
+    await ensureProfile(uid, name);
+  }
+  ctx.session.step = "idle";
+  ctx.session.alertTicker = undefined;
+  ctx.session.pendingQuietStart = undefined;
+  await ctx.reply(WELCOME, { reply_markup: menuFor(uid) });
 });
 
-// "Back to menu" — re-render the main menu in place from any sub-view.
 composer.callbackQuery("menu:main", async (ctx) => {
   await ctx.answerCallbackQuery();
-  await ctx.editMessageText(WELCOME, { reply_markup: mainMenuKeyboard() });
+  ctx.session.step = "idle";
+  ctx.session.alertTicker = undefined;
+  ctx.session.pendingQuietStart = undefined;
+  const uid = ctx.from?.id;
+  try {
+    await ctx.editMessageText(WELCOME, { reply_markup: menuFor(uid) });
+  } catch {
+    await ctx.reply(WELCOME, { reply_markup: menuFor(uid) });
+  }
+});
+
+composer.callbackQuery("flow:cancel", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  ctx.session.step = "idle";
+  ctx.session.alertTicker = undefined;
+  ctx.session.pendingQuietStart = undefined;
+  await ctx.reply("Cancelled. Here's the menu.", {
+    reply_markup: menuFor(ctx.from?.id),
+  });
 });
 
 export default composer;

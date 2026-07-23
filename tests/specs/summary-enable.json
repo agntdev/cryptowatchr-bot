@@ -1,19 +1,69 @@
 [
   {
-    "name": "Enable Morning Summary",
+    "name": "Enable Morning Summary prompts for time",
     "steps": [
       {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "summary:enable" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "Daily morning summary of your watchlist.\n\nStatus: Off\n\nSend the delivery time as HH:MM (24h), e.g. 09:00.\nOr tap Disable to turn it off."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Morning summary time is saved",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "summary:enable" },
+        "expect": [{ "method": "answerCallbackQuery" }, { "method": "editMessageText" }]
+      },
+      {
+        "send": { "text": "09:00" },
         "expect": [
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Enable and configure daily morning price summary"
+              "text": "Morning summary enabled at 09:00 (UTC).\nYou'll get a daily snapshot of your watchlist around that time."
             }
           }
-        ],
-        "send": {
-          "callback": "summary:enable"
-        }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Morning summary can be disabled",
+    "steps": [
+      {
+        "send": { "text": "/start" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "summary:enable" },
+        "expect": [{ "method": "answerCallbackQuery" }]
+      },
+      {
+        "send": { "callback": "summary:disable" },
+        "expect": [
+          { "method": "answerCallbackQuery" },
+          {
+            "method": "sendMessage",
+            "payload": { "text": "Morning summary disabled." }
+          }
+        ]
       }
     ]
   }

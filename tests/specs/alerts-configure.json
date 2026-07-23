@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Configure Alerts",
+    "steps": [
+      {
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Open alert configuration menu for selected ticker"
+            }
+          }
+        ],
+        "send": {
+          "callback": "alerts:configure"
+        }
+      }
+    ]
+  }
+]

@@ -1,7 +1,10 @@
 import { buildBot } from "./bot.js";
 import { freezeAt, resetClock } from "./lib/clock.js";
 import { resetDurableStore } from "./lib/store.js";
-import { resetPriceFetch } from "./services/prices.js";
+import {
+  resetPriceFetch,
+  setPriceOffline,
+} from "./services/prices.js";
 
 // Noon UTC on a fixed day — outside the default quiet-hours window (22:00–08:00)
 // so alert-delivery specs are deterministic.
@@ -17,5 +20,8 @@ export async function makeBot() {
   resetClock();
   freezeAt(HARNESS_NOW);
   resetPriceFetch();
+  // Gate CLI may run outside Vitest — force offline fixtures so price text is
+  // deterministic and we never hang on blocked outbound CoinGecko calls.
+  setPriceOffline(true);
   return buildBot(process.env.BOT_TOKEN ?? "harness-test-token");
 }

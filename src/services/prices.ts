@@ -1,7 +1,8 @@
 /**
  * CoinGecko price feed — real HTTPS contract via fetch.
- * Network is unavailable in the test harness; under VITEST we serve a
- * deterministic offline table for known coins so dialog specs stay green.
+ * Network is unavailable in the test harness; under VITEST / harness offline
+ * mode we serve a deterministic fixture table for known coins so dialog specs
+ * stay green without outbound HTTP.
  */
 
 export interface PriceQuote {
@@ -31,7 +32,7 @@ const COMMON_BY_SYMBOL = new Map(
   COMMON_COINS.map((c) => [c.symbol.toUpperCase(), c]),
 );
 
-/** Offline fixtures used only when process.env.VITEST is set (or fetch fails in test). */
+/** Offline fixtures used when VITEST is set or harness enables offline mode. */
 const OFFLINE_PRICES: Record<string, { price: number; change: number }> = {
   bitcoin: { price: 67500.25, change: 1.42 },
   ethereum: { price: 3450.8, change: -0.65 },
@@ -58,6 +59,8 @@ const OFFLINE_SEARCH: Record<string, TickerInfo> = {
 
 type FetchFn = typeof globalThis.fetch;
 let fetchImpl: FetchFn = globalThis.fetch.bind(globalThis);
+/** Forced offline mode (harness / tokenless gate without VITEST). */
+let offlineMode = false;
 
 /** Inject fetch (tests). */
 export function setPriceFetch(fn: FetchFn): void {
@@ -68,7 +71,13 @@ export function resetPriceFetch(): void {
   fetchImpl = globalThis.fetch.bind(globalThis);
 }
 
+/** Enable deterministic offline fixtures (harness-entry). */
+export function setPriceOffline(enabled: boolean): void {
+  offlineMode = enabled;
+}
+
 function isTestEnv(): boolean {
+  if (offlineMode) return true;
   return typeof process !== "undefined" && Boolean(process.env.VITEST);
 }
 
@@ -223,26 +232,22 @@ export async function fetchPrice(id: string): Promise<PriceQuote | null> {
 
 export function formatUsd(n: number): string {
   if (!Number.isFinite(n)) return "—";
-  // Deterministic formatting (avoid locale variance across runtimes).
+  // Pure deterministic formatting (no locale tables — Workers/Node parity).
   const abs = Math.abs(n);
-  let body: string;
-  if (abs >= 1000) {
-    body = n.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  } else if (abs >= 1) {
-    body = n.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4,
-    });
-  } else {
-    body = n.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 6,
-    });
+  const decimals = abs >= 1 ? 2 : 6;
+  const sign = n < 0 ? "-" : "";
+  let body = abs.toFixed(decimals);
+  if (decimals === 6) {
+    body = body.replace(/0+$/, "").replace(/\.$/, "");
+    if (!body.includes(".")) body += ".00";
+    else {
+      const frac = body.split(".")[1] ?? "";
+      if (frac.length < 2) body = abs.toFixed(2);
+    }
   }
-  return `$${body}`;
+  const [intPart, fracPart = "00"] = body.split(".");
+  const withCommas = intPart!.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return `$${sign}${withCommas}.${fracPart}`;
 }
 
 export function formatPct(n: number | null | undefined): string {

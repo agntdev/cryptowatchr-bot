@@ -1,7 +1,13 @@
 import { Composer } from "grammy";
 import type { Ctx } from "../bot.js";
 import { registerMainMenuItem, inlineButton, inlineKeyboard } from "../toolkit/index.js";
-import { fetchPrice, formatPct, formatUsd, resolveTicker } from "../services/prices.js";
+import {
+  fetchPrice,
+  formatPct,
+  formatUsd,
+  resolveTicker,
+  staleSuffix,
+} from "../services/prices.js";
 import { ensureProfile } from "../services/users.js";
 import { addTicker } from "../services/watchlist.js";
 import { cancelKeyboard, backKeyboard } from "../lib/ui.js";
@@ -42,27 +48,19 @@ composer.on("message:text", async (ctx, next) => {
     return;
   }
 
-  let quote;
+  // Resolved tickers are valid even if the live feed is down — use cache/stale.
+  let quote = null;
   try {
     quote = await fetchPrice(info.id);
   } catch {
-    await ctx.reply(
-      "Price feed is unavailable right now. Try again in a moment.",
-      { reply_markup: cancelKeyboard() },
-    );
-    return;
-  }
-  if (!quote) {
-    await ctx.reply(
-      "That ticker didn't return a price. Try a different symbol.",
-      { reply_markup: cancelKeyboard() },
-    );
-    return;
+    quote = null;
   }
 
   const { item, created } = await addTicker(uid, info);
   ctx.session.step = "idle";
-  const priceLine = `${formatUsd(quote.price_usd)} (${formatPct(quote.change_24h)} 24h)`;
+  const priceLine = quote
+    ? `${formatUsd(quote.price_usd)}${staleSuffix(quote)} (${formatPct(quote.change_24h)} 24h)`
+    : "Price will appear once the feed recovers.";
 
   if (!created) {
     await ctx.reply(

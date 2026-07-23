@@ -14,7 +14,13 @@ import {
 } from "../lib/models.js";
 import { storeGet, storeSet } from "../lib/store.js";
 import { inQuietHours, isSummaryDue, localMinutes } from "../lib/time.js";
-import { fetchPrices, formatPct, formatUsd, type PriceQuote } from "./prices.js";
+import {
+  fetchPrices,
+  formatPct,
+  formatUsd,
+  staleSuffix,
+  type PriceQuote,
+} from "./prices.js";
 import { getProfile, getStats, saveProfile, saveStats } from "./users.js";
 import { listItems, saveItem } from "./watchlist.js";
 
@@ -177,8 +183,10 @@ export async function evaluateUserAlerts(
   const ids = items.map((i) => i.coingecko_id);
   let quotes: Map<string, PriceQuote>;
   try {
+    // fetchPrices already falls back to Binance + last-known cache.
     quotes = await fetchPrices(ids);
   } catch {
+    // Total feed outage with no cache — skip this tick; do not crash scheduler.
     return [];
   }
 
@@ -283,7 +291,20 @@ export async function deliverMorningSummary(
   try {
     quotes = await fetchPrices(items.map((i) => i.coingecko_id));
   } catch {
-    return null;
+    // Total outage — still acknowledge the summary slot so we don't spam retries.
+    const outage =
+      "Morning summary: price feed is unavailable right now. I'll retry next cycle.";
+    if (!force) {
+      try {
+        await send(uid, outage);
+      } catch {
+        /* blocked */
+      }
+      const { localDate } = await import("../lib/time.js");
+      profile.last_summary_date = localDate(profile.timezone);
+      await saveProfile(profile);
+    }
+    return outage;
   }
 
   const lines: string[] = ["Morning summary"];
@@ -298,7 +319,7 @@ export async function deliverMorningSummary(
         ? ` — notable ${formatPct(q.change_24h)} 24h`
         : "";
     lines.push(
-      `• ${item.display_name} (${item.ticker}): ${formatUsd(q.price_usd)} (${formatPct(q.change_24h)})${move}`,
+      `• ${item.display_name} (${item.ticker}): ${formatUsd(q.price_usd)}${staleSuffix(q)} (${formatPct(q.change_24h)})${move}`,
     );
   }
   const text = lines.join("\n");

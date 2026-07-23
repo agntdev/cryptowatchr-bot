@@ -7,6 +7,7 @@ import {
   formatPct,
   formatUsd,
   resolveTicker,
+  staleSuffix,
 } from "../services/prices.js";
 import { ensureProfile } from "../services/users.js";
 import { getItem, listItems } from "../services/watchlist.js";
@@ -76,9 +77,10 @@ async function handlePriceQuery(
     try {
       quotes = await fetchPrices(items.map((i) => i.coingecko_id));
     } catch {
-      await ctx.reply("Price feed is unavailable right now. Try again shortly.", {
-        reply_markup: backKeyboard(),
-      });
+      await ctx.reply(
+        "Price feed is unavailable right now. Try again shortly — I'll use last-known prices when I have them.",
+        { reply_markup: backKeyboard() },
+      );
       return;
     }
     const lines: string[] = ["Watchlist prices:"];
@@ -93,7 +95,7 @@ async function handlePriceQuery(
           ? ` · last alert ${formatUsd(item.last_notified_price)}`
           : "";
       lines.push(
-        `• ${item.display_name} (${item.ticker}): ${formatUsd(quote.price_usd)} (${formatPct(quote.change_24h)} 24h)${last}`,
+        `• ${item.display_name} (${item.ticker}): ${formatUsd(quote.price_usd)}${staleSuffix(quote)} (${formatPct(quote.change_24h)} 24h)${last}`,
       );
     }
     await ctx.reply(lines.join("\n"), { reply_markup: backKeyboard() });
@@ -121,15 +123,17 @@ async function handlePriceQuery(
   try {
     quote = await fetchPrice(info.id);
   } catch {
-    await ctx.reply("Price feed is unavailable right now. Try again shortly.", {
-      reply_markup: backKeyboard(),
-    });
+    await ctx.reply(
+      "Price feed is unavailable right now. Try again shortly — I'll use last-known prices when I have them.",
+      { reply_markup: backKeyboard() },
+    );
     return;
   }
   if (!quote) {
-    await ctx.reply("No price data for that ticker right now.", {
-      reply_markup: backKeyboard(),
-    });
+    await ctx.reply(
+      "No price data for that ticker right now. Try again in a moment.",
+      { reply_markup: backKeyboard() },
+    );
     return;
   }
 
@@ -143,7 +147,7 @@ async function handlePriceQuery(
 
   await ctx.reply(
     `${quote.name} (${quote.symbol})\n` +
-      `Price: ${formatUsd(quote.price_usd)}\n` +
+      `Price: ${formatUsd(quote.price_usd)}${staleSuffix(quote)}\n` +
       `24h change: ${formatPct(quote.change_24h)}` +
       lastLine,
     { reply_markup: backKeyboard() },

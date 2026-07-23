@@ -1,17 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { existsSync, readdirSync, readFileSync } from "fs";
 import { join } from "path";
-import { makeBot } from "../src/harness-entry";
+// Use the same makeBot the publish gate loads — it resets durable store, clock,
+// and price-feed offline fixtures between every spec so replies stay deterministic.
+import { makeBot } from "../src/harness-entry.js";
 import { formatSuiteResult, parseBotSpecs, runSpecs } from "../src/toolkit/harness/run-specs";
 
 // THE PUBLISH GATE replays every tests/specs/*.json against your built bot via the
 // toolkit harness, and fails the build on any mismatch. This test runs the SAME
 // replay locally so `npm test` catches handler-reply-vs-spec drift BEFORE the gate
 // does — the single most common reason a green build still fails to publish.
-//
-// Use makeBot() from harness-entry (not raw buildBot): it resets durable store,
-// freezes the clock, and enables offline price fixtures — matching the publish
-// gate isolation. Without that, watchlist/price specs leak state across runs.
 //
 // If this fails, a handler's reply text doesn't match its spec's expected text:
 // the report names the spec + the exact step + expected-vs-actual call. Make one

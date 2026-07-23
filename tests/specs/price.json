@@ -1,0 +1,20 @@
+[
+  {
+    "name": "/price",
+    "steps": [
+      {
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Request on-demand price check for a ticker or entire watchlist"
+            }
+          }
+        ],
+        "send": {
+          "text": "/price"
+        }
+      }
+    ]
+  }
+]

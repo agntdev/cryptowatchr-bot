@@ -1,6 +1,7 @@
 import { Composer } from "grammy";
 import type { Ctx } from "../bot.js";
 import { inlineButton, inlineKeyboard } from "../toolkit/index.js";
+import { getFeedHealth } from "../services/prices.js";
 import { getStats, isOwner } from "../services/users.js";
 import { backKeyboard } from "../lib/ui.js";
 
@@ -23,11 +24,17 @@ async function dashboardText(): Promise<string> {
       ? "—"
       : types.map(([k, n]) => `${k}: ${n}`).join(", ");
 
+  const health = getFeedHealth();
+  const feedLine =
+    `Price feed: CoinGecko ${health.coingecko.state}, Binance ${health.binance.state}` +
+    (health.last_error ? `\nLast feed error: ${health.last_error}` : "");
+
   return (
     `Owner dashboard\n\n` +
     `Total users: ${stats.total_users}\n\n` +
     `Top alerts by ticker:\n${top}\n\n` +
     `By type: ${typeLine}\n\n` +
+    `${feedLine}\n\n` +
     `Aggregated stats only — no individual user data.`
   );
 }

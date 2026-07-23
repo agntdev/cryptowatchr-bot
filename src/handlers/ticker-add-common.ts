@@ -1,7 +1,13 @@
 import { Composer } from "grammy";
 import type { Ctx } from "../bot.js";
 import { registerMainMenuItem, inlineButton, inlineKeyboard } from "../toolkit/index.js";
-import { COMMON_COINS, fetchPrice, formatPct, formatUsd } from "../services/prices.js";
+import {
+  COMMON_COINS,
+  fetchPrice,
+  formatPct,
+  formatUsd,
+  staleSuffix,
+} from "../services/prices.js";
 import { ensureProfile } from "../services/users.js";
 import { addTicker } from "../services/watchlist.js";
 import { backKeyboard, withBack } from "../lib/ui.js";
@@ -45,26 +51,18 @@ composer.callbackQuery(/^ticker:common:(BTC|ETH|TON)$/, async (ctx) => {
   if (uid == null) return;
   await ensureProfile(uid, ctx.from?.first_name ?? "User");
 
-  let quote;
+  // Common coins are known-valid; still prefer a live/cached quote for display.
+  let quote = null;
   try {
     quote = await fetchPrice(info.id);
   } catch {
-    await ctx.reply(
-      "Price feed is unavailable right now. Try again in a moment.",
-      { reply_markup: backKeyboard() },
-    );
-    return;
-  }
-  if (!quote) {
-    await ctx.reply(
-      "Couldn't validate that ticker against the price feed. Try again later.",
-      { reply_markup: backKeyboard() },
-    );
-    return;
+    quote = null;
   }
 
   const { item, created } = await addTicker(uid, info);
-  const priceLine = `${formatUsd(quote.price_usd)} (${formatPct(quote.change_24h)} 24h)`;
+  const priceLine = quote
+    ? `${formatUsd(quote.price_usd)}${staleSuffix(quote)} (${formatPct(quote.change_24h)} 24h)`
+    : "Price will appear once the feed recovers.";
   if (!created) {
     await ctx.reply(
       `${item.display_name} (${item.ticker}) is already on your watchlist.\n${priceLine}`,

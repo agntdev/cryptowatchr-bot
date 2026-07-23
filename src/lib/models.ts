@@ -79,6 +79,8 @@ export const keys = {
     `user:item:${uid}:${ticker.toUpperCase()}`,
   queue: (uid: number) => `user:queue:${uid}`,
   stats: () => `global:stats`,
+  /** Last-known price quote for a coin id (stale fallback). */
+  priceCache: (coinId: string) => `price:cache:${coinId}`,
 };
 
 export const DEFAULT_QUIET_START = "22:00";

@@ -90,5 +90,21 @@
         ]
       }
     ]
+  },
+  {
+    "name": "/price ETH returns fixture price (feed path healthy)",
+    "steps": [
+      {
+        "send": { "text": "/price ETH" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Ethereum (ETH)\nPrice: $3,450.80\n24h change: -0.65%"
+            }
+          }
+        ]
+      }
+    ]
   }
 ]
